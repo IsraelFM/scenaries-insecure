@@ -1,0 +1,54 @@
+version: '3'
+
+services:
+  learsi:
+    container_name: learsi-insecure
+    build: ./docker/learsi
+    ports:
+      - "9000:9000"
+    volumes:
+      - ./application:/var/www/html
+    environment:
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+    env_file:
+      - .env
+    depends_on:
+      - database
+    networks:
+      - learsi-insecure-net
+
+  webserver:
+    container_name: webserver
+    image: nginx:1.21-alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./application:/var/www/html
+      - ./docker/webserver:/etc/nginx/conf.d/
+    networks:
+      - learsi-insecure-net
+
+  database:
+    container_name: database
+    image: mysql
+    restart: always
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./docker/database:/docker-entrypoint-initdb.d
+      - /dbdata-insecure:/var/lib/mysql
+    env_file:
+      - .env
+    networks:
+      - learsi-insecure-net
+    cap_add:
+      - SYS_NICE  # CAP_SYS_NICE
+
+volumes:
+  dbdata-insecure:
+
+networks:
+  learsi-insecure-net:
